@@ -23,5 +23,5 @@ The project currently exposes no way to store or retrieve binary files. Several 
 
 - New code: storage service, REST controller, DTOs, exception handling for this capability.
 - New config: storage base directory and max upload size (`application.properties`).
-- Dependencies: uses the existing `spring-boot-starter-web` and `spring-boot-starter-validation` starters already in [pom.xml](../../../pom.xml); no new dependencies required.
+- Dependencies: uses the existing `spring-boot-starter-webmvc` and `spring-boot-starter-validation` starters already in [pom.xml](../../../pom.xml). Adds `spring-boot-starter-json` — in Spring Boot 4 the webmvc starter no longer pulls Jackson transitively, and JSON request/response bodies require it.
 - No existing specs or endpoints are affected.
