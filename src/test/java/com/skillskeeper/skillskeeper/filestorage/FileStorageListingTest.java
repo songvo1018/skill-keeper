@@ -3,6 +3,7 @@ package com.skillskeeper.skillskeeper.filestorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -36,18 +39,30 @@ class FileStorageListingTest {
 		registry.add("app.file-storage.base-dir", () -> tempDir.toString());
 	}
 
+	private String authHeader() throws Exception {
+		String responseBody = mockMvc.perform(post("/api/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"username\":\"alice\",\"password\":\"secret\"}"))
+				.andReturn().getResponse().getContentAsString();
+		return "Bearer " + JsonPath.<String>read(responseBody, "$.token");
+	}
+
 	@Test
 	void listStartsEmptyThenReflectsUploadedFiles() throws Exception {
-		mockMvc.perform(get("/api/files"))
+		String authHeader = authHeader();
+
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(0));
 
 		MockMultipartFile first = new MockMultipartFile("file", "a.txt", "text/plain", "a".getBytes());
 		MockMultipartFile second = new MockMultipartFile("file", "b.txt", "text/plain", "b".getBytes());
-		mockMvc.perform(multipart("/api/files").file(first)).andExpect(status().isCreated());
-		mockMvc.perform(multipart("/api/files").file(second)).andExpect(status().isCreated());
+		mockMvc.perform(multipart("/api/files").file(first).header(HttpHeaders.AUTHORIZATION, authHeader))
+				.andExpect(status().isCreated());
+		mockMvc.perform(multipart("/api/files").file(second).header(HttpHeaders.AUTHORIZATION, authHeader))
+				.andExpect(status().isCreated());
 
-		String responseBody = mockMvc.perform(get("/api/files"))
+		String responseBody = mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(2))
 				.andReturn().getResponse().getContentAsString();
