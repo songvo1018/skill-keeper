@@ -4,7 +4,8 @@ Clients that upload files currently have no way to discover what is already stor
 
 ## What Changes
 
-- Add `GET /api/files`, returning the id and original filename of every file currently stored, so clients can discover stored files without already knowing their ids.
+- Add `GET /api/files`, returning the full metadata (id, original filename, content type, size) of every file currently stored, so clients can discover stored files without already knowing their ids.
+- Maintain an in-memory index of stored file metadata (populated from disk on startup, kept up to date on every upload) so listing does not scan the storage directory on every request.
 - No changes to the existing upload (`POST /api/files`) or download (`GET /api/files/{id}`) endpoints.
 
 ## Capabilities
@@ -17,6 +18,6 @@ Clients that upload files currently have no way to discover what is already stor
 
 ## Impact
 
-- New code in the existing `filestorage` package: a listing method on `FileStorageService` and a new controller method, plus a lightweight response DTO holding just `id` and `originalFilename` (the full `FileMetadata` also carries `contentType`/`size`, which the request does not ask the listing to expose).
+- New code in the existing `filestorage` package: an in-memory index inside `FileStorageService` (populated at startup and updated on each upload), a `listFiles()` method reading from it, and a new controller method. The response reuses the existing `FileMetadata` record — no new response DTO.
 - No changes to stored data format, upload, or download behavior.
 - Assumption (minor, not asked about): the list is unordered and unpaginated — reasonable for the current single-directory, no-database storage model; revisit if the number of stored files grows large enough for this to matter.
