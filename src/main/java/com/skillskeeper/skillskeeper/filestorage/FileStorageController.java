@@ -37,7 +37,8 @@ public class FileStorageController {
 
 		return ResponseEntity.ok()
 				.contentType(contentType)
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + metadata.originalFilename() + "\"")
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						String.format(FileStorageMessages.CONTENT_DISPOSITION_ATTACHMENT_TEMPLATE, metadata.originalFilename()))
 				.body(storedFile.resource());
 	}
 }

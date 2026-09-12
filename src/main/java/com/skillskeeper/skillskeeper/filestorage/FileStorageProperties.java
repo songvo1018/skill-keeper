@@ -15,7 +15,7 @@ public record FileStorageProperties(Path baseDir) {
 		try {
 			Files.createDirectories(baseDir);
 		} catch (IOException e) {
-			throw new UncheckedIOException("Could not create file storage directory: " + baseDir, e);
+			throw new UncheckedIOException(FileStorageMessages.DIR_CREATE_FAILED_PREFIX + baseDir, e);
 		}
 	}
 }

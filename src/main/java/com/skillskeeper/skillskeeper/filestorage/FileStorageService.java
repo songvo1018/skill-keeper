@@ -30,8 +30,8 @@ public class FileStorageService {
 		}
 
 		String id = UUID.randomUUID().toString();
-		Path binPath = baseDir.resolve(id + ".bin");
-		Path metaPath = baseDir.resolve(id + ".meta.json");
+		Path binPath = baseDir.resolve(id + FileStorageMessages.BIN_FILE_SUFFIX);
+		Path metaPath = baseDir.resolve(id + FileStorageMessages.META_FILE_SUFFIX);
 		FileMetadata metadata = new FileMetadata(id, sanitizeFilename(file.getOriginalFilename()),
 				file.getContentType(), file.getSize());
 
@@ -43,15 +43,15 @@ public class FileStorageService {
 		try {
 			objectMapper.writeValue(metaPath.toFile(), metadata);
 		} catch (JacksonException e) {
-			throw new FileStorageException("Failed to write metadata for file " + id, e);
+			throw new FileStorageException(FileStorageMessages.METADATA_WRITE_FAILED_PREFIX + id, e);
 		}
 
 		return metadata;
 	}
 
 	public StoredFile load(String id) {
-		Path binPath = resolveWithinBaseDir(id + ".bin");
-		Path metaPath = resolveWithinBaseDir(id + ".meta.json");
+		Path binPath = resolveWithinBaseDir(id + FileStorageMessages.BIN_FILE_SUFFIX);
+		Path metaPath = resolveWithinBaseDir(id + FileStorageMessages.META_FILE_SUFFIX);
 
 		if (binPath == null || metaPath == null || !Files.isRegularFile(binPath) || !Files.isRegularFile(metaPath)) {
 			throw new StoredFileNotFoundException(id);
@@ -61,7 +61,7 @@ public class FileStorageService {
 		try {
 			metadata = objectMapper.readValue(metaPath.toFile(), FileMetadata.class);
 		} catch (JacksonException e) {
-			throw new FileStorageException("Failed to read metadata for file " + id, e);
+			throw new FileStorageException(FileStorageMessages.METADATA_READ_FAILED_PREFIX + id, e);
 		}
 
 		Resource resource = new FileSystemResource(binPath);
