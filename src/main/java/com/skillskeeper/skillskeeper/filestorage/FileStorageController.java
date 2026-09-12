@@ -1,5 +1,7 @@
 package com.skillskeeper.skillskeeper.filestorage;
 
+import java.util.List;
+
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,11 @@ public class FileStorageController {
 	public ResponseEntity<FileMetadata> upload(@RequestParam("file") MultipartFile file) {
 		FileMetadata metadata = fileStorageService.store(file);
 		return ResponseEntity.status(HttpStatus.CREATED).body(metadata);
+	}
+
+	@GetMapping("/api/files")
+	public ResponseEntity<List<FileMetadata>> list() {
+		return ResponseEntity.ok(fileStorageService.listFiles());
 	}
 
 	@GetMapping("/api/files/{id}")

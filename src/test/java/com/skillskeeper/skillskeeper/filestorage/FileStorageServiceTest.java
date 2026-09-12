@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -75,5 +77,52 @@ class FileStorageServiceTest {
 
 		assertThatThrownBy(() -> service.store(empty))
 				.isInstanceOf(EmptyUploadException.class);
+	}
+
+	@Test
+	void indexIsPopulatedFromExistingSidecarsAtConstruction() throws IOException {
+		FileMetadata preExisting = new FileMetadata("pre-existing-id", "old.txt", "text/plain", 3);
+		new ObjectMapper().writeValue(
+				tempDir.resolve(preExisting.id() + FileStorageMessages.META_FILE_SUFFIX).toFile(), preExisting);
+
+		FileStorageService service = newService();
+
+		assertThat(service.listFiles()).containsExactly(preExisting);
+	}
+
+	@Test
+	void corruptedSidecarIsSkippedDuringIndexLoad() throws IOException {
+		Files.writeString(tempDir.resolve("broken" + FileStorageMessages.META_FILE_SUFFIX), "not valid json");
+
+		FileStorageService service = newService();
+
+		assertThat(service.listFiles()).isEmpty();
+	}
+
+	@Test
+	void storedFileIsImmediatelyVisibleInIndex() {
+		FileStorageService service = newService();
+		MockMultipartFile upload = new MockMultipartFile("file", "report.txt", "text/plain",
+				"hello world".getBytes());
+
+		FileMetadata stored = service.store(upload);
+
+		assertThat(service.listFiles()).containsExactly(stored);
+	}
+
+	@Test
+	void listFilesReturnsAllStoredFiles() {
+		FileStorageService service = newService();
+		FileMetadata first = service.store(new MockMultipartFile("file", "a.txt", "text/plain", "a".getBytes()));
+		FileMetadata second = service.store(new MockMultipartFile("file", "b.txt", "text/plain", "b".getBytes()));
+
+		assertThat(service.listFiles()).containsExactlyInAnyOrder(first, second);
+	}
+
+	@Test
+	void listFilesReturnsEmptyListWhenNoneStored() {
+		FileStorageService service = newService();
+
+		assertThat(service.listFiles()).isEqualTo(List.of());
 	}
 }

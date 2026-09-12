@@ -1,9 +1,13 @@
 package com.skillskeeper.skillskeeper.filestorage;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -18,10 +22,12 @@ public class FileStorageService {
 
 	private final Path baseDir;
 	private final ObjectMapper objectMapper;
+	private final Map<String, FileMetadata> index = new ConcurrentHashMap<>();
 
 	public FileStorageService(FileStorageProperties properties, ObjectMapper objectMapper) {
 		this.baseDir = properties.baseDir();
 		this.objectMapper = objectMapper;
+		loadIndexFromDisk();
 	}
 
 	public FileMetadata store(MultipartFile file) {
@@ -46,6 +52,7 @@ public class FileStorageService {
 			throw new FileStorageException(FileStorageMessages.METADATA_WRITE_FAILED_PREFIX + id, e);
 		}
 
+		index.put(id, metadata);
 		return metadata;
 	}
 
@@ -66,6 +73,26 @@ public class FileStorageService {
 
 		Resource resource = new FileSystemResource(binPath);
 		return new StoredFile(resource, metadata);
+	}
+
+	public List<FileMetadata> listFiles() {
+		return List.copyOf(index.values());
+	}
+
+	private void loadIndexFromDisk() {
+		String metaGlob = "*" + FileStorageMessages.META_FILE_SUFFIX;
+		try (DirectoryStream<Path> metaFiles = Files.newDirectoryStream(baseDir, metaGlob)) {
+			for (Path metaPath : metaFiles) {
+				try {
+					FileMetadata metadata = objectMapper.readValue(metaPath.toFile(), FileMetadata.class);
+					index.put(metadata.id(), metadata);
+				} catch (JacksonException e) {
+					// Corrupted or half-written sidecar from a prior crash: excluded from the index, not fatal.
+				}
+			}
+		} catch (IOException e) {
+			throw new FileStorageException(FileStorageMessages.DIR_SCAN_FAILED_PREFIX + baseDir, e);
+		}
 	}
 
 	private Path resolveWithinBaseDir(String fileName) {
