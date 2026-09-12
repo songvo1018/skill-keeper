@@ -1,30 +1,43 @@
-schema: spec-driven
+# ==============================================================================
+# OpenSpec Project Configuration File
+# Location: openspec/config.yaml
+# ==============================================================================
 
-#Project context (optional)
-#This is shown to AI when creating artifacts.
-#Add your tech stack, conventions, style guides, domain knowledge, etc.
-#Example:
-context:
-    Tech stack: Java, Spring. We use conventional commits
+# 1. Workflow & Schema Settings
+schema: spec-driven          # Default schema (e.g., spec-driven, minimalist, event-driven)
+specsPath: openspec/specs    # Custom directory route relative to project root
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
+# 2. Project Context
+# This block injects permanent architectural rules and conventions directly
+# to the AI every time an OpenSpec artifact is processed or generated.
+context: |
+  techStack:
+    backend: Java, Spring. We use conventional commits
+    database: PostgreSQL
+#  conventions:
+#    - "Use functional components and hooks for React elements."
+#    - "Enforce strict separation between business logic and UI presentation."
+#    - "Write integration tests using Vitest and Playwright."
+
+# 3. Per-Artifact Rules
+# Keyed by artifact ID (proposal, specs, design, tasks) - applies strict guidelines
+# specifically to the creation or lifecycle of that artifact.
 rules:
-   proposal:
-     - Keep proposals under 500 words
-     - Always include a "Non-goals" section
-   tasks:
-     - Break tasks into chunks of max 2 hours
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+  specs:
+    - "Requirements MUST use lowercase RFC-2119 keywords (shall, must, should)."
+  tasks:
+    - Break tasks into chunks of max 2 hours
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-   operations:
-     apply:
-       guidance:
-         - Keep test summaries concise
-     archive:
-       guidance:
-         - Summarize the archive outcome before finishing
+# 4. Per-Operation Advisory Guidance
+# Keyed by operation ID (apply, archive) - kept separate from artifact rules.
+operations:
+  apply:
+    guidance:
+      - Keep test summaries concise
+  archive:
+    guidance:
+      - Summarize the archive outcome before finishing
+
