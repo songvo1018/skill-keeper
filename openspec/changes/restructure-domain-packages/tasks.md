@@ -23,8 +23,8 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run `./mvnw clean test` and confirm 98 tests pass, with no test deleted, skipped or weakened relative to the baseline in task 1.1 — compare the per-class counts, not just the total
-- [ ] 5.2 Confirm the layout now matches the skill: no `.java` file sits directly in `auth` or `filestorage` except the two constants classes, every `@RestController` is in a `controller` package, every service interface and implementation in `service`, every record in `model`, and no `util` package was created empty
-- [ ] 5.3 Confirm each service the skill covers has an interface it implements (`FileStorage`/`FileStorageService`, `TokenAuthority`/`TokenService`, `CredentialsVerifier`/`AlwaysApprovingCredentialsVerifier`) and that `FileMetadataStore` deliberately has none
-- [ ] 5.4 Start the app (`./mvnw spring-boot:run`) and confirm with `curl` that Spring still wires everything after the move: login succeeds, `GET /api/files` answers `200` with a token and `401` without one carrying `WWW-Authenticate`, upload and download still round-trip, and `GET /api/hello` now answers `404`
-- [ ] 5.5 Confirm the working tree holds no stray `data/` directory and that `git status` shows only intended moves, additions and deletions — in particular that no file was left behind in an old package
+- [x] 5.1 Run `./mvnw clean test` and confirm 98 tests pass, with no test deleted, skipped or weakened relative to the baseline in task 1.1 — compare the per-class counts, not just the total
+- [x] 5.2 Confirm the layout now matches the skill: no `.java` file sits directly in `auth` or `filestorage` except the two constants classes, every `@RestController` is in a `controller` package, every service interface and implementation in `service`, every record in `model`, and no `util` package was created empty
+- [x] 5.3 Confirm each service the skill covers has an interface it implements (`FileStorage`/`FileStorageService`, `TokenAuthority`/`TokenService`, `CredentialsVerifier`/`AlwaysApprovingCredentialsVerifier`) and that `FileMetadataStore` deliberately has none
+- [x] 5.4 Start the app (`./mvnw spring-boot:run`) and confirm with `curl` that Spring still wires everything after the move: login succeeds, `GET /api/files` answers `200` with a token and `401` without one carrying `WWW-Authenticate`, upload and download still round-trip, and `GET /api/hello` now answers `404`
+- [x] 5.5 Confirm the working tree holds no stray `data/` directory and that `git status` shows only intended moves, additions and deletions — in particular that no file was left behind in an old package
