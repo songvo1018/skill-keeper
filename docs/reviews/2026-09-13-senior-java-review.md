@@ -381,5 +381,5 @@ reaches that endpoint's normal handling») и даёт дешёвый векто
 ## Связанный change
 
 Исправления Findings 1–13, 16, 20–25 спланированы в
-[`openspec/changes/fix-code-review-defects`](../../openspec/changes/fix-code-review-defects/proposal.md).
+[`openspec/changes/archive/2026-09-13-fix-code-review-defects`](../../openspec/changes/archive/2026-09-13-fix-code-review-defects/proposal.md).
 Findings 14, 15, 17–19, 26–29 в него сознательно не вошли — см. раздел Non-Goals того change.
