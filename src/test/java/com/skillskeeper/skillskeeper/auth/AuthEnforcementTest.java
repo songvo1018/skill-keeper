@@ -21,7 +21,7 @@ class AuthEnforcementTest extends AuthenticatedApiTest {
 
 	@Test
 	void protectedEndpointWithoutTokenReturnsUnauthorizedProblemDetail() throws Exception {
-		mockMvc.perform(get("/api/hello"))
+		mockMvc.perform(get("/api/files"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.status").value(401))
 				.andExpect(jsonPath("$.detail").value("Missing or invalid authentication token"));
@@ -29,21 +29,21 @@ class AuthEnforcementTest extends AuthenticatedApiTest {
 
 	@Test
 	void missingTokenRejectionCarriesABearerChallenge() throws Exception {
-		mockMvc.perform(get("/api/hello"))
+		mockMvc.perform(get("/api/files"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, equalToIgnoringCase("Bearer")));
 	}
 
 	@Test
 	void unrecognizedTokenRejectionCarriesABearerChallenge() throws Exception {
-		mockMvc.perform(get("/api/hello").header(HttpHeaders.AUTHORIZATION, "Bearer does-not-exist"))
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, "Bearer does-not-exist"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, equalToIgnoringCase("Bearer")));
 	}
 
 	@Test
 	void lowercaseSchemeNameIsAccepted() throws Exception {
-		mockMvc.perform(get("/api/hello").header(HttpHeaders.AUTHORIZATION, "bearer " + token()))
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, "bearer " + token()))
 				.andExpect(status().isOk());
 	}
 

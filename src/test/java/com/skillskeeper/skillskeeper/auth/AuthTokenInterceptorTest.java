@@ -22,7 +22,7 @@ class AuthTokenInterceptorTest {
 	private final HttpServletResponse response = mock(HttpServletResponse.class);
 
 	private static MockHttpServletRequest requestWithAuthorization(String headerValue) {
-		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/hello");
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/files");
 		if (headerValue != null) {
 			request.addHeader("Authorization", headerValue);
 		}

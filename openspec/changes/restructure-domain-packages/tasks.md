@@ -1,0 +1,30 @@
+*The rules being applied are in `.claude/skills/project-structure-skill/SKILL.md`; the reasoning behind the sub-package list, the interface names and each visibility decision is in [design.md](design.md). This change is mechanical: `./mvnw test` must report 98 passing tests after every section, and no existing assertion may be weakened to make a move fit. If a move appears to require changing what a test asserts, stop and report it instead.*
+
+## 1. Baseline
+
+- [x] 1.1 Run `./mvnw test` and confirm 98 tests pass before anything moves, so any later failure is attributable to this change (`JAVA_HOME` must point at a JDK 25; Temurin 25 is installed at `C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot`)
+
+## 2. Remove the obsolete endpoint
+
+- [x] 2.1 Repoint the four auth tests that use `/api/hello` only as a stand-in protected endpoint at `GET /api/files`, which the same interceptor rule protects: `AuthEnforcementTest` (four occurrences), `TokenExpiryIntegrationTest`, and `ExistingEndpointsRequireTokenTest.helloWithValidTokenSucceedsAsBefore` — the last asserts the greeting body, so replace it with an assertion that the protected endpoint answers `200` for a valid token; also change the path string in `AuthTokenInterceptorTest`, where it is only a label on a mock request. Verify `./mvnw test` still reports 98 passing
+- [x] 2.2 Delete `HelloController` and confirm nothing references `/api/hello`, `HelloController` or the greeting string anywhere in `src/`; verify with `./mvnw test` (98 passing, none of them exercising the deleted endpoint) and by grepping for all three
+
+## 3. Restructure `filestorage`
+
+- [ ] 3.1 Create the `filestorage` sub-packages and move each class into the one the skill assigns it, changing only package declarations and imports: `controller` (`FileStorageController`), `service` (`FileStorageService`, `FileMetadataStore`), `model` (`FileMetadata`, `StoredFile`, `FileStorageProperties`), `exception` (`EmptyUploadException`, `FileStorageException`, `InvalidContentTypeException`, `StoredFileNotFoundException`), `web` (`FileStorageExceptionHandler`); leave `FileStorageMessages` at the domain root and make it public. Verify with `./mvnw test`: 98 passing
+- [ ] 3.2 Extract the `FileStorage` interface into `filestorage.service`, declaring the three methods the controller uses (`store`, `load`, `listFiles`) with their Javadoc, implemented by `FileStorageService`; inject the interface into `FileStorageController`. Keep `initialize()` and anything the service does not expose off the interface. Verify with `./mvnw test`: 98 passing, and confirm `FileStorageController` no longer names the implementation
+- [ ] 3.3 Settle the visibility of `FileStorageService.initialize()` and `FileMetadataStore` per the table in [design.md](design.md): move `FileStorageServiceTest`, `FileStoragePropertiesTest` and `FileStorageStartupTest`'s sidecar helpers into the `filestorage.service` test package where that keeps `initialize()` package-private, and widen only what a caller in a sibling package genuinely needs. Record in the commit which members widened and why. Verify with `./mvnw test`: 98 passing
+
+## 4. Restructure `auth`
+
+- [ ] 4.1 Create the `auth` sub-packages and move each class into the one the skill assigns it, changing only package declarations and imports: `controller` (`AuthController`), `service` (`TokenService`, `TokenRecord`, `CredentialsVerifier`, `AlwaysApprovingCredentialsVerifier`), `model` (`LoginRequest`, `LoginResponse`, `AuthTokenProperties`), `exception` (`InvalidCredentialsException`, `MissingOrInvalidTokenException`), `config` (`AuthWebConfig`, `AuthClockConfig`, `ProductionCredentialsVerifierConfiguration`), `web` (`AuthTokenInterceptor`, `AuthExceptionHandler`, `AuthenticatedUser`); leave `AuthMessages` at the domain root and make it public. Verify with `./mvnw test`: 98 passing
+- [ ] 4.2 Extract the `TokenAuthority` interface into `auth.service`, declaring `issueToken`, `isValid` and `authenticate` with their Javadoc, implemented by `TokenService`; inject the interface into `AuthController`, `AuthTokenInterceptor` and `AuthWebConfig`. Keep `retainedCount()` off the interface. Confirm the name `TokenAuthority` still reads correctly against the methods it declares, and say so in the commit if it was changed. Verify with `./mvnw test`: 98 passing
+- [ ] 4.3 Settle `auth` visibility per the table in [design.md](design.md): `TokenRecord` and both profile-scoped configurations stay package-private inside their new packages, `LoginRequest`'s length constants become public, and `TokenServiceTest`/`LoginRequestTest` move to the matching test packages rather than forcing production members wider. Verify with `./mvnw test`: 98 passing
+
+## 5. Verification
+
+- [ ] 5.1 Run `./mvnw clean test` and confirm 98 tests pass, with no test deleted, skipped or weakened relative to the baseline in task 1.1 — compare the per-class counts, not just the total
+- [ ] 5.2 Confirm the layout now matches the skill: no `.java` file sits directly in `auth` or `filestorage` except the two constants classes, every `@RestController` is in a `controller` package, every service interface and implementation in `service`, every record in `model`, and no `util` package was created empty
+- [ ] 5.3 Confirm each service the skill covers has an interface it implements (`FileStorage`/`FileStorageService`, `TokenAuthority`/`TokenService`, `CredentialsVerifier`/`AlwaysApprovingCredentialsVerifier`) and that `FileMetadataStore` deliberately has none
+- [ ] 5.4 Start the app (`./mvnw spring-boot:run`) and confirm with `curl` that Spring still wires everything after the move: login succeeds, `GET /api/files` answers `200` with a token and `401` without one carrying `WWW-Authenticate`, upload and download still round-trip, and `GET /api/hello` now answers `404`
+- [ ] 5.5 Confirm the working tree holds no stray `data/` directory and that `git status` shows only intended moves, additions and deletions — in particular that no file was left behind in an old package

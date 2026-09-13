@@ -22,7 +22,7 @@ class TokenExpiryIntegrationTest extends AuthenticatedApiTest {
 
 		Thread.sleep(20);
 
-		mockMvc.perform(get("/api/hello").header(HttpHeaders.AUTHORIZATION, authHeader))
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isUnauthorized());
 	}
 }

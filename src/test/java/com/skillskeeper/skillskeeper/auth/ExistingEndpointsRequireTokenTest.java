@@ -35,10 +35,9 @@ class ExistingEndpointsRequireTokenTest extends AuthenticatedApiTest {
 	}
 
 	@Test
-	void helloWithValidTokenSucceedsAsBefore() throws Exception {
-		mockMvc.perform(get("/api/hello").header(HttpHeaders.AUTHORIZATION, authHeader()))
-				.andExpect(status().isOk())
-				.andExpect(content().string("Hello, Skills Keeper!"));
+	void listWithValidTokenSucceeds() throws Exception {
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, authHeader()))
+				.andExpect(status().isOk());
 	}
 
 	@Test
