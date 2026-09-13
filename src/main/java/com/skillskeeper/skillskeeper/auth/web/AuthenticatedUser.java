@@ -1,4 +1,6 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.web;
+
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
 
 import jakarta.servlet.http.HttpServletRequest;
 

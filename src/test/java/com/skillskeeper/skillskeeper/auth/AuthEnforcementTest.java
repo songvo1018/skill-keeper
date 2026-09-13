@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
+import com.skillskeeper.skillskeeper.auth.model.LoginRequest;
+
 import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
 /**

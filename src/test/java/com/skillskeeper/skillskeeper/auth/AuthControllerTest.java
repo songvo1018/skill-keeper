@@ -10,6 +10,13 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import com.skillskeeper.skillskeeper.auth.controller.AuthController;
+import com.skillskeeper.skillskeeper.auth.exception.InvalidCredentialsException;
+import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
+import com.skillskeeper.skillskeeper.auth.model.LoginRequest;
+import com.skillskeeper.skillskeeper.auth.service.CredentialsVerifier;
+import com.skillskeeper.skillskeeper.auth.service.TokenService;
+
 import com.skillskeeper.skillskeeper.support.LogCapture;
 
 class AuthControllerTest {

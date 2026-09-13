@@ -1,8 +1,11 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+
+import com.skillskeeper.skillskeeper.auth.AuthMessages;
+import com.skillskeeper.skillskeeper.auth.service.CredentialsVerifier;
 
 /**
  * Fails startup under the production profile while the only credential verification available is the

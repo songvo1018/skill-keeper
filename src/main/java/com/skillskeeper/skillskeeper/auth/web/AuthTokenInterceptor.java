@@ -1,9 +1,13 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import com.skillskeeper.skillskeeper.auth.AuthMessages;
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
+import com.skillskeeper.skillskeeper.auth.service.TokenAuthority;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,10 +16,10 @@ public class AuthTokenInterceptor implements HandlerInterceptor {
 
 	private static final Logger log = LoggerFactory.getLogger(AuthTokenInterceptor.class);
 
-	private final TokenService tokenService;
+	private final TokenAuthority tokenAuthority;
 
-	public AuthTokenInterceptor(TokenService tokenService) {
-		this.tokenService = tokenService;
+	public AuthTokenInterceptor(TokenAuthority tokenAuthority) {
+		this.tokenAuthority = tokenAuthority;
 	}
 
 	@Override
@@ -23,7 +27,7 @@ public class AuthTokenInterceptor implements HandlerInterceptor {
 		String token = bearerToken(request);
 		String username;
 		try {
-			username = tokenService.authenticate(token);
+			username = tokenAuthority.authenticate(token);
 		}
 		catch (MissingOrInvalidTokenException e) {
 			log.warn("Rejected {} {}: token not recognised or no longer valid", request.getMethod(),

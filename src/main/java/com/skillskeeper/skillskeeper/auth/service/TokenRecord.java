@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.service;
 
 import java.time.Instant;
 

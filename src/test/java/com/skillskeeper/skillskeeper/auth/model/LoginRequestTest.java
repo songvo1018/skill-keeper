@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

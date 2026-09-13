@@ -10,6 +10,12 @@ import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
+import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
+import com.skillskeeper.skillskeeper.auth.service.TokenService;
+import com.skillskeeper.skillskeeper.auth.web.AuthTokenInterceptor;
+import com.skillskeeper.skillskeeper.auth.web.AuthenticatedUser;
+
 import com.skillskeeper.skillskeeper.support.LogCapture;
 
 import jakarta.servlet.http.HttpServletResponse;

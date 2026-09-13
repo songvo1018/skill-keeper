@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.service;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -9,8 +9,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
+import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
+
 @Service
-public class TokenService {
+public class TokenService implements TokenAuthority {
 
 	private final Map<String, TokenRecord> tokens = new ConcurrentHashMap<>();
 	private final AuthTokenProperties properties;
@@ -21,6 +24,7 @@ public class TokenService {
 		this.clock = clock;
 	}
 
+	@Override
 	public String issueToken(String username) {
 		Instant now = clock.instant();
 		purgeExpired(now);
@@ -31,6 +35,7 @@ public class TokenService {
 		return token;
 	}
 
+	@Override
 	public boolean isValid(String token) {
 		return lookup(token) != null;
 	}
@@ -40,6 +45,7 @@ public class TokenService {
 	 *
 	 * @throws MissingOrInvalidTokenException if the token is absent, unknown, or past its lifetime
 	 */
+	@Override
 	public String authenticate(String token) {
 		TokenRecord record = lookup(token);
 		if (record == null) {

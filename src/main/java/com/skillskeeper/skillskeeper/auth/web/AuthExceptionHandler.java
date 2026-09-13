@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.web;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -6,6 +6,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.skillskeeper.skillskeeper.auth.AuthMessages;
+import com.skillskeeper.skillskeeper.auth.exception.InvalidCredentialsException;
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
 
 @RestControllerAdvice
 public class AuthExceptionHandler {

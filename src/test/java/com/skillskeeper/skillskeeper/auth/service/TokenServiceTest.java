@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,6 +10,9 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
+
+import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
+import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
 
 class TokenServiceTest {
 

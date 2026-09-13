@@ -1,4 +1,6 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.exception;
+
+import com.skillskeeper.skillskeeper.auth.AuthMessages;
 
 public class MissingOrInvalidTokenException extends RuntimeException {
 

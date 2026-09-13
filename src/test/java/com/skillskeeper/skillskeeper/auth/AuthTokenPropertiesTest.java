@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
+import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
+
 class AuthTokenPropertiesTest {
 
 	private static AuthTokenProperties bind(Map<String, Object> properties) {

@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.service;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;

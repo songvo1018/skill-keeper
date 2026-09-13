@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.auth;
+package com.skillskeeper.skillskeeper.auth.exception;
 
 public class InvalidCredentialsException extends RuntimeException {
 
