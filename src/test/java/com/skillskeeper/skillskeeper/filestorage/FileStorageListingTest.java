@@ -3,49 +3,19 @@ package com.skillskeeper.skillskeeper.filestorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
+import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class FileStorageListingTest {
-
-	@TempDir
-	static Path tempDir;
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@DynamicPropertySource
-	static void storageProperties(DynamicPropertyRegistry registry) {
-		registry.add("app.file-storage.base-dir", () -> tempDir.toString());
-	}
-
-	private String authHeader() throws Exception {
-		String responseBody = mockMvc.perform(post("/api/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"username\":\"alice\",\"password\":\"secret\"}"))
-				.andReturn().getResponse().getContentAsString();
-		return "Bearer " + JsonPath.<String>read(responseBody, "$.token");
-	}
+class FileStorageListingTest extends AuthenticatedApiTest {
 
 	@Test
 	void listStartsEmptyThenReflectsUploadedFiles() throws Exception {
@@ -69,5 +39,12 @@ class FileStorageListingTest {
 
 		List<String> filenames = JsonPath.read(responseBody, "$[*].originalFilename");
 		assertThat(filenames).containsExactlyInAnyOrder("a.txt", "b.txt");
+
+		// Every id the listing reports must be retrievable, not merely present in the response.
+		List<String> ids = JsonPath.read(responseBody, "$[*].id");
+		for (String id : ids) {
+			mockMvc.perform(get("/api/files/{id}", id).header(HttpHeaders.AUTHORIZATION, authHeader))
+					.andExpect(status().isOk());
+		}
 	}
 }

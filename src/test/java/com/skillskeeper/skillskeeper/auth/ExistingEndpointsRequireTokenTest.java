@@ -2,53 +2,21 @@ package com.skillskeeper.skillskeeper.auth;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.file.Path;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
+import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class ExistingEndpointsRequireTokenTest {
-
-	@TempDir
-	static Path tempDir;
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@DynamicPropertySource
-	static void storageProperties(DynamicPropertyRegistry registry) {
-		registry.add("app.file-storage.base-dir", () -> tempDir.toString());
-	}
-
-	private String login() throws Exception {
-		String responseBody = mockMvc.perform(post("/api/auth/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"username\":\"alice\",\"password\":\"secret\"}"))
-				.andExpect(status().isOk())
-				.andReturn().getResponse().getContentAsString();
-		return JsonPath.read(responseBody, "$.token");
-	}
-
-	@Test
-	void helloWithoutTokenIsUnauthorized() throws Exception {
-		mockMvc.perform(get("/api/hello")).andExpect(status().isUnauthorized());
-	}
+/**
+ * Covers which endpoints require a token; the shape of the 401 itself is asserted once in
+ * {@link AuthEnforcementTest}.
+ */
+class ExistingEndpointsRequireTokenTest extends AuthenticatedApiTest {
 
 	@Test
 	void uploadWithoutTokenIsUnauthorized() throws Exception {
@@ -68,28 +36,26 @@ class ExistingEndpointsRequireTokenTest {
 
 	@Test
 	void helloWithValidTokenSucceedsAsBefore() throws Exception {
-		String token = login();
-
-		mockMvc.perform(get("/api/hello").header("Authorization", "Bearer " + token))
+		mockMvc.perform(get("/api/hello").header(HttpHeaders.AUTHORIZATION, authHeader()))
 				.andExpect(status().isOk())
 				.andExpect(content().string("Hello, Skills Keeper!"));
 	}
 
 	@Test
 	void uploadListAndDownloadWithValidTokenSucceedAsBefore() throws Exception {
-		String token = login();
+		String authHeader = authHeader();
 		MockMultipartFile upload = new MockMultipartFile("file", "report.txt", "text/plain", "hello".getBytes());
 
 		String uploadBody = mockMvc.perform(multipart("/api/files").file(upload)
-						.header("Authorization", "Bearer " + token))
+						.header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isCreated())
 				.andReturn().getResponse().getContentAsString();
 		String id = JsonPath.read(uploadBody, "$.id");
 
-		mockMvc.perform(get("/api/files").header("Authorization", "Bearer " + token))
+		mockMvc.perform(get("/api/files").header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(get("/api/files/{id}", id).header("Authorization", "Bearer " + token))
+		mockMvc.perform(get("/api/files/{id}", id).header(HttpHeaders.AUTHORIZATION, authHeader))
 				.andExpect(status().isOk())
 				.andExpect(content().bytes("hello".getBytes()));
 	}

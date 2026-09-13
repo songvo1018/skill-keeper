@@ -1,7 +1,9 @@
 package com.skillskeeper.skillskeeper.auth;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -9,12 +11,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class AuthExceptionHandler {
 
 	@ExceptionHandler(MissingOrInvalidTokenException.class)
-	public ProblemDetail handleMissingOrInvalidToken(MissingOrInvalidTokenException ex) {
-		return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+	public ResponseEntity<ProblemDetail> handleMissingOrInvalidToken(MissingOrInvalidTokenException ex) {
+		return unauthorized(ex.getMessage());
 	}
 
 	@ExceptionHandler(InvalidCredentialsException.class)
-	public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
-		return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+	public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex) {
+		return unauthorized(ex.getMessage());
+	}
+
+	/**
+	 * Returned as a {@link ResponseEntity} rather than a bare {@link ProblemDetail} so the response
+	 * can carry the {@code WWW-Authenticate} challenge RFC 7235 requires on a 401.
+	 */
+	private static ResponseEntity<ProblemDetail> unauthorized(String detail) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.header(HttpHeaders.WWW_AUTHENTICATE, AuthMessages.BEARER_CHALLENGE)
+				.body(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, detail));
 	}
 }

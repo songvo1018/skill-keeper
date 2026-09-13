@@ -5,18 +5,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class AuthLoginEndpointTest {
+import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
-	@Autowired
-	private MockMvc mockMvc;
+class AuthLoginEndpointTest extends AuthenticatedApiTest {
 
 	@Test
 	void loginWithNonBlankCredentialsReturnsToken() throws Exception {
@@ -41,5 +34,19 @@ class AuthLoginEndpointTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"username\":\"alice\"}"))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void rejectedLoginResponseDoesNotEchoTheSubmittedPassword() throws Exception {
+		mockMvc.perform(post("/api/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"username\":\"\",\"password\":\"hunter2\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(result -> {
+					String body = result.getResponse().getContentAsString();
+					if (body.contains("hunter2")) {
+						throw new AssertionError("Response disclosed the submitted password: " + body);
+					}
+				});
 	}
 }

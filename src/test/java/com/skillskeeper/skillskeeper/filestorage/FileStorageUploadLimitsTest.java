@@ -25,6 +25,11 @@ import org.springframework.util.MultiValueMap;
  * Uses a real embedded server (not MockMvc) because the max-file-size limit is
  * enforced by the servlet container's multipart parsing, which MockMvc's mock
  * request never goes through.
+ *
+ * <p>Deliberately sends no token: the container rejects the oversized body while parsing the
+ * multipart request, before the handler — and therefore before the auth interceptor — is reached. The
+ * `413` here is the container's, so the ordering this test documents (413 ahead of 401) is expected
+ * rather than a gap in token enforcement.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
