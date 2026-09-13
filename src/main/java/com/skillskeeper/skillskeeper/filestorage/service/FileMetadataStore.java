@@ -1,8 +1,12 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.service;
 
 import java.nio.file.Path;
 
 import org.springframework.stereotype.Component;
+
+import com.skillskeeper.skillskeeper.filestorage.FileStorageMessages;
+import com.skillskeeper.skillskeeper.filestorage.exception.FileStorageException;
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;

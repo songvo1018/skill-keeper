@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.controller;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -17,32 +17,36 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
+import com.skillskeeper.skillskeeper.filestorage.service.FileStorage;
+
 @RestController
 public class FileStorageController {
 
 	private static final String CONTENT_TYPE_OPTIONS_HEADER = "X-Content-Type-Options";
 	private static final String NO_SNIFF = "nosniff";
 
-	private final FileStorageService fileStorageService;
+	private final FileStorage fileStorage;
 
-	public FileStorageController(FileStorageService fileStorageService) {
-		this.fileStorageService = fileStorageService;
+	public FileStorageController(FileStorage fileStorage) {
+		this.fileStorage = fileStorage;
 	}
 
 	@PostMapping("/api/files")
 	public ResponseEntity<FileMetadata> upload(@RequestParam("file") MultipartFile file) {
-		FileMetadata metadata = fileStorageService.store(file);
+		FileMetadata metadata = fileStorage.store(file);
 		return ResponseEntity.status(HttpStatus.CREATED).body(metadata);
 	}
 
 	@GetMapping("/api/files")
 	public ResponseEntity<List<FileMetadata>> list() {
-		return ResponseEntity.ok(fileStorageService.listFiles());
+		return ResponseEntity.ok(fileStorage.listFiles());
 	}
 
 	@GetMapping("/api/files/{id}")
 	public ResponseEntity<Resource> download(@PathVariable String id) {
-		StoredFile storedFile = fileStorageService.load(id);
+		StoredFile storedFile = fileStorage.load(id);
 		FileMetadata metadata = storedFile.metadata();
 
 		return ResponseEntity.ok()

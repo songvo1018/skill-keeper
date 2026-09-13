@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.model;
 
 import org.springframework.core.io.Resource;
 

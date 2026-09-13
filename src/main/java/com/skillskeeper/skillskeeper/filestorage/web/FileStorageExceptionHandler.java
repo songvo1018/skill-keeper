@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,6 +7,12 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
+import com.skillskeeper.skillskeeper.filestorage.FileStorageMessages;
+import com.skillskeeper.skillskeeper.filestorage.exception.EmptyUploadException;
+import com.skillskeeper.skillskeeper.filestorage.exception.FileStorageException;
+import com.skillskeeper.skillskeeper.filestorage.exception.InvalidContentTypeException;
+import com.skillskeeper.skillskeeper.filestorage.exception.StoredFileNotFoundException;
 
 @RestControllerAdvice
 public class FileStorageExceptionHandler {

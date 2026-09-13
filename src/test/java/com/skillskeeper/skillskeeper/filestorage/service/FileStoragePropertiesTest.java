@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+
+import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
 
 import com.skillskeeper.skillskeeper.SkillsKeeperApplication;
 

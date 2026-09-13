@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,6 +12,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.util.StreamUtils;
+
+import com.skillskeeper.skillskeeper.filestorage.FileStorageMessages;
+import com.skillskeeper.skillskeeper.filestorage.exception.EmptyUploadException;
+import com.skillskeeper.skillskeeper.filestorage.exception.FileStorageException;
+import com.skillskeeper.skillskeeper.filestorage.exception.InvalidContentTypeException;
+import com.skillskeeper.skillskeeper.filestorage.exception.StoredFileNotFoundException;
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
+import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
 
 import com.skillskeeper.skillskeeper.support.LogCapture;
 

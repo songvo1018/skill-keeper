@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,10 +20,19 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skillskeeper.skillskeeper.filestorage.FileStorageMessages;
+import com.skillskeeper.skillskeeper.filestorage.exception.EmptyUploadException;
+import com.skillskeeper.skillskeeper.filestorage.exception.FileStorageException;
+import com.skillskeeper.skillskeeper.filestorage.exception.InvalidContentTypeException;
+import com.skillskeeper.skillskeeper.filestorage.exception.StoredFileNotFoundException;
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
+import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
+
 import jakarta.annotation.PostConstruct;
 
 @Service
-public class FileStorageService {
+public class FileStorageService implements FileStorage {
 
 	private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
@@ -42,6 +51,7 @@ public class FileStorageService {
 		loadIndexFromDisk();
 	}
 
+	@Override
 	public FileMetadata store(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
 			throw new EmptyUploadException("Uploaded file must not be empty");
@@ -91,6 +101,7 @@ public class FileStorageService {
 	 * Metadata comes from the index rather than from disk: it is already in memory, and reading it
 	 * back would let the listing and this method disagree about what exists.
 	 */
+	@Override
 	public StoredFile load(String id) {
 		FileMetadata metadata = index.get(id);
 		if (metadata == null) {
@@ -106,6 +117,7 @@ public class FileStorageService {
 		return new StoredFile(resource, metadata);
 	}
 
+	@Override
 	public List<FileMetadata> listFiles() {
 		return List.copyOf(index.values());
 	}

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+
 import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
 import tools.jackson.databind.ObjectMapper;

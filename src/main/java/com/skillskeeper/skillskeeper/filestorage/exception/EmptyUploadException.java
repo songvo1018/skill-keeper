@@ -1,4 +1,4 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.exception;
 
 public class EmptyUploadException extends RuntimeException {
 

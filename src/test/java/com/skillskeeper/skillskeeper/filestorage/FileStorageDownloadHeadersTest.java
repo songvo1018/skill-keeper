@@ -12,6 +12,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import com.skillskeeper.skillskeeper.filestorage.controller.FileStorageController;
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
+import com.skillskeeper.skillskeeper.filestorage.service.FileStorage;
+
 /**
  * Covers the download response's headers directly, because what they must contain depends only on the
  * stored metadata — including metadata a running service can no longer produce but may still hold
@@ -19,12 +24,12 @@ import org.springframework.http.ResponseEntity;
  */
 class FileStorageDownloadHeadersTest {
 
-	private final FileStorageService fileStorageService = mock(FileStorageService.class);
-	private final FileStorageController controller = new FileStorageController(fileStorageService);
+	private final FileStorage fileStorage = mock(FileStorage.class);
+	private final FileStorageController controller = new FileStorageController(fileStorage);
 
 	private ResponseEntity<Resource> downloadWith(String originalFilename, String contentType) {
 		FileMetadata metadata = new FileMetadata("an-id", originalFilename, contentType, 4);
-		when(fileStorageService.load(anyString()))
+		when(fileStorage.load(anyString()))
 				.thenReturn(new StoredFile(new ByteArrayResource("data".getBytes()), metadata));
 		return controller.download("an-id");
 	}

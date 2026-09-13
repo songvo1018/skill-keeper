@@ -8,6 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
+import com.skillskeeper.skillskeeper.filestorage.exception.FileStorageException;
+import com.skillskeeper.skillskeeper.filestorage.exception.InvalidContentTypeException;
+import com.skillskeeper.skillskeeper.filestorage.web.FileStorageExceptionHandler;
+
 import com.skillskeeper.skillskeeper.support.LogCapture;
 
 /**

@@ -1,4 +1,6 @@
-package com.skillskeeper.skillskeeper.filestorage;
+package com.skillskeeper.skillskeeper.filestorage.exception;
+
+import com.skillskeeper.skillskeeper.filestorage.FileStorageMessages;
 
 public class InvalidContentTypeException extends RuntimeException {
 
