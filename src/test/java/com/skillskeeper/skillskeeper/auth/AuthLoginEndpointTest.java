@@ -11,11 +11,15 @@ import com.skillskeeper.skillskeeper.support.AuthenticatedApiTest;
 
 class AuthLoginEndpointTest extends AuthenticatedApiTest {
 
+	/**
+	 * The base class registers this account before every test, so these are the credentials of a
+	 * user that exists. Non-blank is no longer enough on its own.
+	 */
 	@Test
-	void loginWithNonBlankCredentialsReturnsToken() throws Exception {
+	void loginWithTheCredentialsOfARegisteredUserReturnsToken() throws Exception {
 		mockMvc.perform(post("/api/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"username\":\"alice\",\"password\":\"secret\"}"))
+						.content(CREDENTIALS_TEMPLATE.formatted(TEST_USERNAME, TEST_PASSWORD)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.token").isNotEmpty());
 	}

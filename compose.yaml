@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: skills-keeper-postgres
+    environment:
+      POSTGRES_DB: skills_keeper
+      POSTGRES_USER: skills_keeper
+      POSTGRES_PASSWORD: skills_keeper
+    ports:
+      - "5432:5432"
+    volumes:
+      # postgres:18 keeps its data under /var/lib/postgresql/18/docker and declares the volume one
+      # level up, so the named volume is mounted at /var/lib/postgresql rather than at PGDATA.
+      - skills-keeper-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skills_keeper -d skills_keeper"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  skills-keeper-postgres-data:

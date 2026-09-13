@@ -16,6 +16,7 @@ Services and components of project must placement in domain-oriented packaging.
 - Common methods and classes move and place in skill-keeper\src\main\java\com\skillskeeper\skillskeeper\util package
 - In domain package controllers, service and models must be placed in sub package
 - Services must have and implement Interface of his methods
+- Слой репозиториев и ображения к БД должен быть реализован через компоненты репозитория
 
 ## Sub packages of a domain
 

@@ -1,0 +1,33 @@
+package com.skillskeeper.skillskeeper.filestorage.repository;
+
+import java.time.Instant;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
+
+import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
+
+/**
+ * One row of {@code stored_file}: the metadata of a stored file, as the database holds it.
+ *
+ * <p>Deliberately separate from {@link FileMetadata}, which is the API response body. Mapping the
+ * table onto that record would tie the JSON contract to the schema, so adding a column would change
+ * the API; {@code createdAt} is exactly such a column - it exists to give the listing a stable
+ * order and is never sent to a client.
+ *
+ * @param createdAt {@code null} on a row that has not been inserted yet: the column is filled by
+ * the database default, so an insert never supplies it
+ */
+@Table("stored_file")
+public record StoredFileRow(@Id String id, String originalFilename, String contentType, long sizeBytes,
+		Instant createdAt) {
+
+	public static StoredFileRow forInsert(FileMetadata metadata) {
+		return new StoredFileRow(metadata.id(), metadata.originalFilename(), metadata.contentType(), metadata.size(),
+				null);
+	}
+
+	public FileMetadata toMetadata() {
+		return new FileMetadata(id, originalFilename, contentType, sizeBytes);
+	}
+}

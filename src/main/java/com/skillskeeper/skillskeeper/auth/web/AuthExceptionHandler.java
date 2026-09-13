@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.skillskeeper.skillskeeper.auth.AuthMessages;
 import com.skillskeeper.skillskeeper.auth.exception.InvalidCredentialsException;
 import com.skillskeeper.skillskeeper.auth.exception.MissingOrInvalidTokenException;
+import com.skillskeeper.skillskeeper.auth.exception.UsernameAlreadyTakenException;
+import com.skillskeeper.skillskeeper.auth.exception.WeakPasswordException;
 
 @RestControllerAdvice
 public class AuthExceptionHandler {
@@ -22,6 +24,22 @@ public class AuthExceptionHandler {
 	@ExceptionHandler(InvalidCredentialsException.class)
 	public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex) {
 		return unauthorized(ex.getMessage());
+	}
+
+	/**
+	 * Lists every rule the password failed rather than only the first, so the client can correct
+	 * them in one go. The submitted password appears in neither the detail nor the listed rules.
+	 */
+	@ExceptionHandler(WeakPasswordException.class)
+	public ProblemDetail handleWeakPassword(WeakPasswordException ex) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		problemDetail.setProperty(AuthMessages.VIOLATIONS_PROPERTY, ex.violations());
+		return problemDetail;
+	}
+
+	@ExceptionHandler(UsernameAlreadyTakenException.class)
+	public ProblemDetail handleUsernameAlreadyTaken(UsernameAlreadyTakenException ex) {
+		return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 	}
 
 	/**

@@ -21,6 +21,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.skillskeeper.skillskeeper.support.PostgresTestContainer;
+
 /**
  * Uses a real embedded server (not MockMvc) because the max-file-size limit is
  * enforced by the servlet container's multipart parsing, which MockMvc's mock
@@ -44,6 +46,7 @@ class FileStorageUploadLimitsTest {
 	@DynamicPropertySource
 	static void storageProperties(DynamicPropertyRegistry registry) {
 		registry.add("app.file-storage.base-dir", () -> tempDir.toString());
+		PostgresTestContainer.registerProperties(registry);
 	}
 
 	@Test

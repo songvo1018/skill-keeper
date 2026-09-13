@@ -103,6 +103,9 @@ class FileStorageControllerTest extends AuthenticatedApiTest {
 	 * Asserts the count of files the storage directory should hold and that nothing appeared beside
 	 * it. Checking only that each entry's parent is the storage directory would pass unconditionally,
 	 * since listing a directory cannot return anything else.
+	 *
+	 * <p>One file per upload, not two: the metadata that used to be written beside the content as a
+	 * JSON sidecar is a row in {@code stored_file} now.
 	 */
 	@Test
 	void uploadSanitizesPathTraversalFilenameAndStaysWithinBaseDir() throws Exception {
@@ -115,7 +118,7 @@ class FileStorageControllerTest extends AuthenticatedApiTest {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.originalFilename").value("passwd"));
 
-		assertThat(filesInStorageDir()).isEqualTo(filesBefore + 2);
+		assertThat(filesInStorageDir()).isEqualTo(filesBefore + 1);
 		assertThat(entriesBesideStorageDir()).isEqualTo(besideBefore);
 	}
 }

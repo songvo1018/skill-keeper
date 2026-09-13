@@ -2,14 +2,11 @@ package com.skillskeeper.skillskeeper.filestorage.service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +25,8 @@ import com.skillskeeper.skillskeeper.filestorage.exception.StoredFileNotFoundExc
 import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
 import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
 import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
+import com.skillskeeper.skillskeeper.filestorage.repository.StoredFileRepository;
+import com.skillskeeper.skillskeeper.filestorage.repository.StoredFileRow;
 
 import jakarta.annotation.PostConstruct;
 
@@ -37,18 +36,16 @@ public class FileStorageService implements FileStorage {
 	private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
 	private final Path baseDir;
-	private final FileMetadataStore metadataStore;
-	private final Map<String, FileMetadata> index = new ConcurrentHashMap<>();
+	private final StoredFileRepository repository;
 
-	public FileStorageService(FileStorageProperties properties, FileMetadataStore metadataStore) {
+	public FileStorageService(FileStorageProperties properties, StoredFileRepository repository) {
 		this.baseDir = properties.baseDir().toAbsolutePath().normalize();
-		this.metadataStore = metadataStore;
+		this.repository = repository;
 	}
 
 	@PostConstruct
 	void initialize() {
 		createBaseDir();
-		loadIndexFromDisk();
 	}
 
 	@Override
@@ -62,11 +59,11 @@ public class FileStorageService implements FileStorage {
 		FileMetadata metadata = new FileMetadata(id, sanitizeFilename(file.getOriginalFilename()), contentType,
 				file.getSize());
 
-		// The content is written under a temporary name and only moved into place once its metadata
-		// is durable, so a failure part way through can never leave content without metadata behind.
+		// The content is published before its row is inserted, and the row is what makes a file
+		// visible. A crash between the two therefore leaves content nobody can reach, rather than a
+		// row promising a file that cannot be downloaded.
 		Path tempPath = baseDir.resolve(id + FileStorageMessages.BIN_FILE_SUFFIX + FileStorageMessages.TEMP_FILE_SUFFIX);
 		Path binPath = payloadPath(id);
-		Path metaPath = metadataPath(id);
 
 		try {
 			file.transferTo(tempPath);
@@ -77,36 +74,29 @@ public class FileStorageService implements FileStorage {
 		}
 
 		try {
-			metadataStore.write(metaPath, metadata);
-		}
-		catch (RuntimeException e) {
-			deleteQuietly(tempPath);
-			throw e;
-		}
-
-		try {
 			Files.move(tempPath, binPath, StandardCopyOption.ATOMIC_MOVE);
 		}
 		catch (IOException e) {
 			deleteQuietly(tempPath);
-			deleteQuietly(metaPath);
 			throw new FileStorageException(FileStorageMessages.PAYLOAD_PUBLISH_FAILED_PREFIX + id, e);
 		}
 
-		index.put(id, metadata);
+		try {
+			repository.insert(StoredFileRow.forInsert(metadata));
+		}
+		catch (RuntimeException e) {
+			deleteQuietly(binPath);
+			throw new FileStorageException(FileStorageMessages.METADATA_WRITE_FAILED_PREFIX + id, e);
+		}
+
 		return metadata;
 	}
 
-	/**
-	 * Metadata comes from the index rather than from disk: it is already in memory, and reading it
-	 * back would let the listing and this method disagree about what exists.
-	 */
 	@Override
 	public StoredFile load(String id) {
-		FileMetadata metadata = index.get(id);
-		if (metadata == null) {
-			throw new StoredFileNotFoundException(id);
-		}
+		FileMetadata metadata = repository.findById(id)
+				.map(StoredFileRow::toMetadata)
+				.orElseThrow(() -> new StoredFileNotFoundException(id));
 
 		Path binPath = resolveWithinBaseDir(id + FileStorageMessages.BIN_FILE_SUFFIX);
 		if (!Files.isRegularFile(binPath)) {
@@ -117,9 +107,17 @@ public class FileStorageService implements FileStorage {
 		return new StoredFile(resource, metadata);
 	}
 
+	/**
+	 * Rows whose content is no longer on disk are left out, so that every id this returns can be
+	 * passed to {@link #load(String)}. The check costs one call per row and is done per request
+	 * rather than once at startup, because content can go missing at any time.
+	 */
 	@Override
 	public List<FileMetadata> listFiles() {
-		return List.copyOf(index.values());
+		return repository.findAllOrdered().stream()
+				.filter(row -> Files.isRegularFile(payloadPath(row.id())))
+				.map(StoredFileRow::toMetadata)
+				.toList();
 	}
 
 	private void createBaseDir() {
@@ -131,56 +129,8 @@ public class FileStorageService implements FileStorage {
 		}
 	}
 
-	private void loadIndexFromDisk() {
-		String metaGlob = "*" + FileStorageMessages.META_FILE_SUFFIX;
-		try (DirectoryStream<Path> metaFiles = Files.newDirectoryStream(baseDir, metaGlob)) {
-			for (Path metaPath : metaFiles) {
-				indexSidecar(metaPath);
-			}
-		}
-		catch (IOException e) {
-			throw new FileStorageException(FileStorageMessages.DIR_SCAN_FAILED_PREFIX + baseDir, e);
-		}
-	}
-
-	/**
-	 * Adds one sidecar to the index, or skips it. Anything a crash could have left behind — an
-	 * unreadable file, valid JSON that does not describe a file, a sidecar whose content is gone —
-	 * is logged and excluded rather than allowed to abort startup.
-	 */
-	private void indexSidecar(Path metaPath) {
-		String fileName = metaPath.getFileName().toString();
-		String id = fileName.substring(0, fileName.length() - FileStorageMessages.META_FILE_SUFFIX.length());
-
-		FileMetadata metadata;
-		try {
-			metadata = metadataStore.read(metaPath);
-		}
-		catch (RuntimeException e) {
-			log.warn("Skipping unreadable metadata record {}: {}", fileName, e.getMessage());
-			return;
-		}
-
-		if (metadata.id() == null || metadata.id().isBlank() || !metadata.id().equals(id)) {
-			log.warn("Skipping metadata record {}: it records id {}, which does not identify that file", fileName,
-					metadata.id());
-			return;
-		}
-
-		if (!Files.isRegularFile(payloadPath(id))) {
-			log.warn("Skipping metadata record {}: no stored content accompanies it", fileName);
-			return;
-		}
-
-		index.put(id, metadata);
-	}
-
 	private Path payloadPath(String id) {
 		return baseDir.resolve(id + FileStorageMessages.BIN_FILE_SUFFIX);
-	}
-
-	private Path metadataPath(String id) {
-		return baseDir.resolve(id + FileStorageMessages.META_FILE_SUFFIX);
 	}
 
 	private void deleteQuietly(Path path) {

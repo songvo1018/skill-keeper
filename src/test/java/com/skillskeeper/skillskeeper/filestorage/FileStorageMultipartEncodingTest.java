@@ -23,6 +23,9 @@ import org.springframework.test.context.DynamicPropertySource;
 
 import com.jayway.jsonpath.JsonPath;
 
+import com.skillskeeper.skillskeeper.support.PostgresTestContainer;
+import com.skillskeeper.skillskeeper.support.TestPasswordHashing;
+
 /**
  * Uses a real server and a hand-built multipart body so the filename's bytes on the wire are known
  * exactly. A {@code curl} check from a Windows shell cannot establish this: the console may re-encode
@@ -46,13 +49,34 @@ class FileStorageMultipartEncodingTest {
 	@DynamicPropertySource
 	static void storageProperties(DynamicPropertyRegistry registry) {
 		registry.add("app.file-storage.base-dir", () -> tempDir.toString());
+		PostgresTestContainer.registerProperties(registry);
+		TestPasswordHashing.registerProperties(registry);
+	}
+
+	private static final String USERNAME = "alice";
+
+	private static final String PASSWORD = "Sup3rSecret!";
+
+	private static final String CREDENTIALS_TEMPLATE = "{\"username\":\"%s\",\"password\":\"%s\"}";
+
+	/**
+	 * Registers before logging in: credentials only work now if they belong to an account. Called
+	 * from {@link #token()} rather than a {@code @BeforeEach} because that is the only place a
+	 * token is needed, and a repeat answers `409`, which is fine.
+	 */
+	private void registerUser() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		this.restTemplate.postForEntity("/api/auth/register",
+				new HttpEntity<>(CREDENTIALS_TEMPLATE.formatted(USERNAME, PASSWORD), headers), String.class);
 	}
 
 	private String token() {
+		registerUser();
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		ResponseEntity<String> response = this.restTemplate.postForEntity("/api/auth/login",
-				new HttpEntity<>("{\"username\":\"alice\",\"password\":\"secret\"}", headers), String.class);
+				new HttpEntity<>(CREDENTIALS_TEMPLATE.formatted(USERNAME, PASSWORD), headers), String.class);
 		return JsonPath.read(response.getBody(), "$.token");
 	}
 

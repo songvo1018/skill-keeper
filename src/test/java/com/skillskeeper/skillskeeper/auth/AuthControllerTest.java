@@ -16,6 +16,7 @@ import com.skillskeeper.skillskeeper.auth.model.AuthTokenProperties;
 import com.skillskeeper.skillskeeper.auth.model.LoginRequest;
 import com.skillskeeper.skillskeeper.auth.service.CredentialsVerifier;
 import com.skillskeeper.skillskeeper.auth.service.TokenService;
+import com.skillskeeper.skillskeeper.auth.service.UserRegistry;
 
 import com.skillskeeper.skillskeeper.support.LogCapture;
 
@@ -24,7 +25,8 @@ class AuthControllerTest {
 	private final CredentialsVerifier credentialsVerifier = mock(CredentialsVerifier.class);
 	private final TokenService tokenService = new TokenService(
 			new AuthTokenProperties(Duration.ofMinutes(30), 100), Clock.systemUTC());
-	private final AuthController controller = new AuthController(this.credentialsVerifier, this.tokenService);
+	private final AuthController controller = new AuthController(this.credentialsVerifier, this.tokenService,
+			mock(UserRegistry.class));
 
 	@Test
 	void rejectedCredentialsThrowInvalidCredentialsException() {

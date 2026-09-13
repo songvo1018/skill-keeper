@@ -21,29 +21,25 @@ import com.skillskeeper.skillskeeper.filestorage.exception.StoredFileNotFoundExc
 import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
 import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
 import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
+import com.skillskeeper.skillskeeper.filestorage.repository.StoredFileRow;
 
-import com.skillskeeper.skillskeeper.support.LogCapture;
+import com.skillskeeper.skillskeeper.support.InMemoryStoredFileRepository;
 
-import tools.jackson.databind.ObjectMapper;
-
+/**
+ * Covers the service against a stand-in repository. Everything about the metadata records that used
+ * to live on disk moved to {@link LegacyMetadataImporter} and is tested there.
+ */
 class FileStorageServiceTest {
 
 	@TempDir
 	Path tempDir;
 
+	private final InMemoryStoredFileRepository repository = new InMemoryStoredFileRepository();
+
 	private FileStorageService newService() {
-		FileStorageService service = new FileStorageService(new FileStorageProperties(tempDir),
-				new FileMetadataStore());
+		FileStorageService service = new FileStorageService(new FileStorageProperties(tempDir), repository);
 		service.initialize();
 		return service;
-	}
-
-	private void writeSidecar(String id, Object body) {
-		new ObjectMapper().writeValue(tempDir.resolve(id + FileStorageMessages.META_FILE_SUFFIX).toFile(), body);
-	}
-
-	private void writePayload(String id) throws IOException {
-		Files.writeString(tempDir.resolve(id + FileStorageMessages.BIN_FILE_SUFFIX), "content");
 	}
 
 	@Test
@@ -102,18 +98,7 @@ class FileStorageServiceTest {
 	}
 
 	@Test
-	void indexIsPopulatedFromExistingSidecarsAtConstruction() throws IOException {
-		FileMetadata preExisting = new FileMetadata("pre-existing-id", "old.txt", "text/plain", 3);
-		writeSidecar(preExisting.id(), preExisting);
-		writePayload(preExisting.id());
-
-		FileStorageService service = newService();
-
-		assertThat(service.listFiles()).containsExactly(preExisting);
-	}
-
-	@Test
-	void storedFileIsImmediatelyVisibleInIndex() {
+	void storedFileIsImmediatelyVisibleInTheListing() {
 		FileStorageService service = newService();
 		MockMultipartFile upload = new MockMultipartFile("file", "report.txt", "text/plain",
 				"hello world".getBytes());
@@ -139,59 +124,14 @@ class FileStorageServiceTest {
 		assertThat(service.listFiles()).isEqualTo(List.of());
 	}
 
-	// --- Startup scan survives unusable records (Finding 1) ---
-
 	@Test
-	void sidecarHoldingEmptyJsonObjectIsSkippedInsteadOfFailing() throws IOException {
-		writeSidecar("broken", java.util.Map.of());
-		FileMetadata valid = new FileMetadata("valid-id", "ok.txt", "text/plain", 7);
-		writeSidecar(valid.id(), valid);
-		writePayload(valid.id());
-
+	void listFilesReturnsFilesInTheOrderTheyWereStored() {
 		FileStorageService service = newService();
+		FileMetadata first = service.store(new MockMultipartFile("file", "a.txt", "text/plain", "a".getBytes()));
+		FileMetadata second = service.store(new MockMultipartFile("file", "b.txt", "text/plain", "b".getBytes()));
+		FileMetadata third = service.store(new MockMultipartFile("file", "c.txt", "text/plain", "c".getBytes()));
 
-		assertThat(service.listFiles()).containsExactly(valid);
-	}
-
-	@Test
-	void corruptedSidecarIsSkippedDuringIndexLoad() throws IOException {
-		Files.writeString(tempDir.resolve("broken" + FileStorageMessages.META_FILE_SUFFIX), "not valid json");
-
-		FileStorageService service = newService();
-
-		assertThat(service.listFiles()).isEmpty();
-	}
-
-	@Test
-	void sidecarWhoseRecordedIdDisagreesWithItsFilenameIsSkipped() throws IOException {
-		writeSidecar("filename-id", new FileMetadata("a-different-id", "ok.txt", "text/plain", 7));
-		writePayload("filename-id");
-
-		FileStorageService service = newService();
-
-		assertThat(service.listFiles()).isEmpty();
-	}
-
-	@Test
-	void sidecarWithoutStoredContentIsSkipped() {
-		FileMetadata orphan = new FileMetadata("orphan-id", "gone.txt", "text/plain", 7);
-		writeSidecar(orphan.id(), orphan);
-
-		FileStorageService service = newService();
-
-		assertThat(service.listFiles()).isEmpty();
-		assertThatThrownBy(() -> service.load(orphan.id())).isInstanceOf(StoredFileNotFoundException.class);
-	}
-
-	@Test
-	void skippedSidecarIsLogged() throws IOException {
-		Files.writeString(tempDir.resolve("broken" + FileStorageMessages.META_FILE_SUFFIX), "not valid json");
-
-		try (LogCapture logs = LogCapture.of(FileStorageService.class)) {
-			newService();
-
-			assertThat(logs.warningsAndWorse()).anySatisfy(message -> assertThat(message).contains("broken"));
-		}
+		assertThat(service.listFiles()).containsExactly(first, second, third);
 	}
 
 	// --- Content type validated on write (Finding 2) ---
@@ -233,11 +173,10 @@ class FileStorageServiceTest {
 
 	@Test
 	void metadataWriteFailureLeavesNothingBehind() {
-		FileMetadataStore failing = new FileMetadataStore() {
+		InMemoryStoredFileRepository failing = new InMemoryStoredFileRepository() {
 			@Override
-			void write(Path metaPath, FileMetadata metadata) {
-				throw new FileStorageException(FileStorageMessages.METADATA_WRITE_FAILED_PREFIX + metadata.id(),
-						new IOException("disk full"));
+			public void insert(StoredFileRow row) {
+				throw new IllegalStateException("insert rejected");
 			}
 		};
 		FileStorageService service = new FileStorageService(new FileStorageProperties(tempDir), failing);
@@ -251,13 +190,13 @@ class FileStorageServiceTest {
 		assertThat(service.listFiles()).isEmpty();
 	}
 
-	// --- Index is the single source of truth (Finding 5) ---
+	// --- The table is the single source of truth (Finding 5) ---
 
 	@Test
 	void everyListedIdCanBeLoaded() throws IOException {
-		writeSidecar("orphan-sidecar", new FileMetadata("orphan-sidecar", "gone.txt", "text/plain", 1));
-		Files.writeString(tempDir.resolve("payload-without-sidecar" + FileStorageMessages.BIN_FILE_SUFFIX), "x");
-		Files.writeString(tempDir.resolve("garbage" + FileStorageMessages.META_FILE_SUFFIX), "not json");
+		repository.insert(StoredFileRow.forInsert(new FileMetadata("row-without-content", "gone.txt", "text/plain",
+				1)));
+		Files.writeString(tempDir.resolve("content-without-row" + FileStorageMessages.BIN_FILE_SUFFIX), "x");
 
 		FileStorageService service = newService();
 		service.store(new MockMultipartFile("file", "a.txt", "text/plain", "a".getBytes()));
@@ -270,7 +209,18 @@ class FileStorageServiceTest {
 	}
 
 	@Test
-	void loadDoesNotDependOnTheSidecarStillBeingReadable() throws IOException {
+	void rowWhoseContentIsMissingIsNeitherListedNorLoadable() {
+		FileMetadata orphan = new FileMetadata("orphan-row", "gone.txt", "text/plain", 7);
+		repository.insert(StoredFileRow.forInsert(orphan));
+
+		FileStorageService service = newService();
+
+		assertThat(service.listFiles()).isEmpty();
+		assertThatThrownBy(() -> service.load(orphan.id())).isInstanceOf(StoredFileNotFoundException.class);
+	}
+
+	@Test
+	void loadDoesNotDependOnAnyMetadataRecordOnDisk() throws IOException {
 		FileStorageService service = newService();
 		FileMetadata stored = service.store(
 				new MockMultipartFile("file", "a.txt", "text/plain", "a".getBytes()));
@@ -280,16 +230,14 @@ class FileStorageServiceTest {
 		assertThat(service.load(stored.id()).metadata()).isEqualTo(stored);
 	}
 
-	// --- Storage format is pinned independently of the web mapper (Finding 13) ---
-
 	@Test
-	void sidecarWrittenByAPlainMapperIsStillReadable() throws IOException {
-		FileMetadata metadata = new FileMetadata("pinned-id", "pinned.txt", "text/plain", 4);
-		writeSidecar(metadata.id(), metadata);
-		writePayload(metadata.id());
-
+	void storingWritesContentButNoMetadataRecordOnDisk() {
 		FileStorageService service = newService();
 
-		assertThat(service.listFiles()).containsExactly(metadata);
+		FileMetadata stored = service.store(
+				new MockMultipartFile("file", "a.txt", "text/plain", "data".getBytes()));
+
+		assertThat(tempDir.resolve(stored.id() + FileStorageMessages.BIN_FILE_SUFFIX)).isRegularFile();
+		assertThat(tempDir.resolve(stored.id() + FileStorageMessages.META_FILE_SUFFIX)).doesNotExist();
 	}
 }

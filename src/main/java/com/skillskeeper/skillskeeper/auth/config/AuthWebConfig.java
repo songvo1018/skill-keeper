@@ -20,6 +20,6 @@ public class AuthWebConfig implements WebMvcConfigurer {
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new AuthTokenInterceptor(tokenAuthority))
 				.addPathPatterns("/api/**")
-				.excludePathPatterns("/api/auth/login");
+				.excludePathPatterns("/api/auth/login", "/api/auth/register");
 	}
 }

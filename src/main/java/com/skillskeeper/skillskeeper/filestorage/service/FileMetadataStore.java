@@ -12,7 +12,10 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Reads and writes the JSON sidecar that records a stored file's metadata.
+ * Reads the JSON sidecar that used to record a stored file's metadata.
+ *
+ * <p>Nothing writes a sidecar any more - {@code stored_file} holds metadata now - so only reading
+ * remains, for {@link LegacyMetadataImporter} to pick up files stored before the table existed.
  *
  * <p>Deliberately owns its own {@link ObjectMapper} rather than the injected one Spring configures
  * for HTTP: the sidecar is an on-disk format, and sharing the web mapper would let a future
@@ -29,15 +32,6 @@ class FileMetadataStore {
 		}
 		catch (JacksonException e) {
 			throw new FileStorageException(FileStorageMessages.METADATA_READ_FAILED_PREFIX + metaPath.getFileName(), e);
-		}
-	}
-
-	void write(Path metaPath, FileMetadata metadata) {
-		try {
-			objectMapper.writeValue(metaPath.toFile(), metadata);
-		}
-		catch (JacksonException e) {
-			throw new FileStorageException(FileStorageMessages.METADATA_WRITE_FAILED_PREFIX + metadata.id(), e);
 		}
 	}
 }

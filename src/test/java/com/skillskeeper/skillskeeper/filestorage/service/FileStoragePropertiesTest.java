@@ -14,6 +14,8 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import com.skillskeeper.skillskeeper.filestorage.model.FileStorageProperties;
 
 import com.skillskeeper.skillskeeper.SkillsKeeperApplication;
+import com.skillskeeper.skillskeeper.support.InMemoryStoredFileRepository;
+import com.skillskeeper.skillskeeper.support.PostgresTestContainer;
 
 class FileStoragePropertiesTest {
 
@@ -35,7 +37,7 @@ class FileStoragePropertiesTest {
 		Path absent = this.tempDir.resolve("not-created-yet");
 
 		FileStorageService service = new FileStorageService(new FileStorageProperties(absent),
-				new FileMetadataStore());
+				new InMemoryStoredFileRepository());
 		assertThat(Files.exists(absent)).isFalse();
 
 		service.initialize();
@@ -46,12 +48,17 @@ class FileStoragePropertiesTest {
 	/**
 	 * Loading with a configuration name that does not resolve leaves {@code base-dir} unset, which must
 	 * fail by naming the property rather than with a null dereference somewhere later.
+	 *
+	 * <p>The database connection has to be supplied back by hand: discarding the configuration also
+	 * discards it, and the context would then fail over the missing datasource before it ever got
+	 * as far as binding {@code base-dir}.
 	 */
 	@Test
 	void absentBaseDirFailsStartupNamingTheProperty() {
 		assertThatThrownBy(() -> new SpringApplicationBuilder(SkillsKeeperApplication.class)
 				.web(WebApplicationType.NONE)
 				.properties("spring.config.name=no-such-configuration")
+				.properties(PostgresTestContainer.datasourceProperties())
 				.run()
 				.close())
 				.hasStackTraceContaining("baseDir");

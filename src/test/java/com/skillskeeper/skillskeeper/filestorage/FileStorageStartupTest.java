@@ -21,8 +21,12 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * A sidecar holding valid-but-empty JSON used to abort startup: the record parsed, and its null id
- * then reached the index. The unit test for the scan cannot prove startup is unaffected, so this
+ * then reached the index. The unit test for the import cannot prove startup is unaffected, so this
  * plants such a file before the application context is built.
+ *
+ * <p>Now that metadata lives in the database, this also covers the import end to end: the records
+ * are picked up by the runner that executes once the context is up, so what the listing returns is
+ * what reached {@code stored_file}.
  */
 class FileStorageStartupTest extends AuthenticatedApiTest {
 

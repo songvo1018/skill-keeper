@@ -43,10 +43,21 @@ class AuthenticatedUserIntegrationTest extends AuthenticatedApiTest {
 		}
 	}
 
+	/**
+	 * Registers the user before logging them in: a name on its own no longer gets a token. The
+	 * registration result is not asserted because one of these names is the account the base class
+	 * already created, which answers `409`.
+	 */
 	private String tokenFor(String username) throws Exception {
+		String credentials = CREDENTIALS_TEMPLATE.formatted(username, TEST_PASSWORD);
+
+		mockMvc.perform(post("/api/auth/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(credentials));
+
 		String responseBody = mockMvc.perform(post("/api/auth/login")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"username\":\"" + username + "\",\"password\":\"secret\"}"))
+						.content(credentials))
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 		return JsonPath.read(responseBody, "$.token");
