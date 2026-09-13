@@ -1,0 +1,179 @@
+:root {
+	color-scheme: light dark;
+	--gap: 1rem;
+	--border: #c9ccd1;
+	--muted: #5d6470;
+	--error: #b3261e;
+	--surface: #ffffff;
+	--ground: #f4f5f7;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--border: #3a3f47;
+		--muted: #a6adb8;
+		--error: #f2b8b5;
+		--surface: #1f2228;
+		--ground: #16181c;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: var(--gap);
+	background: var(--ground);
+	font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+h1 {
+	margin: 0;
+	font-size: 1.25rem;
+}
+
+button,
+input {
+	font: inherit;
+	padding: 0.4rem 0.6rem;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	background: var(--surface);
+	color: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+button:disabled {
+	cursor: default;
+	opacity: 0.6;
+}
+
+.panel {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: var(--gap);
+}
+
+.error {
+	color: var(--error);
+	min-height: 1.5rem;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+/* --- Login --- */
+
+.login {
+	max-width: 22rem;
+	margin: 10vh auto 0;
+	display: grid;
+	gap: var(--gap);
+}
+
+.field {
+	display: grid;
+	gap: 0.25rem;
+	margin-bottom: 0.75rem;
+}
+
+.field-error {
+	color: var(--error);
+	font-size: 0.85rem;
+	min-height: 1.2rem;
+}
+
+/* --- Files --- */
+
+.top-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--gap);
+	margin-bottom: var(--gap);
+}
+
+.columns {
+	display: grid;
+	grid-template-columns: minmax(26rem, 1fr) 1fr;
+	gap: var(--gap);
+	align-items: start;
+}
+
+@media (max-width: 60rem) {
+	.columns {
+		grid-template-columns: 1fr;
+	}
+}
+
+.upload {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: var(--gap);
+}
+
+.upload input[type="file"] {
+	max-width: 100%;
+}
+
+.table-scroll {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th,
+td {
+	text-align: left;
+	padding: 0.4rem 0.5rem;
+	border-bottom: 1px solid var(--border);
+	vertical-align: top;
+}
+
+th {
+	font-size: 0.85rem;
+	color: var(--muted);
+	font-weight: 600;
+}
+
+td.actions {
+	white-space: nowrap;
+}
+
+.filename {
+	/* anywhere, not break-all: a name breaks at its spaces and hyphens first and only splits a word
+	   when there is no other way, so an ordinary name stays readable in a narrow column. */
+	overflow-wrap: anywhere;
+	min-width: 8rem;
+}
+
+.preview-body {
+	margin-top: 0.75rem;
+	max-height: 60vh;
+	overflow: auto;
+}
+
+.preview-body pre {
+	margin: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+	font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+	font-size: 0.9rem;
+}
+
+.preview-body img {
+	max-width: 100%;
+	height: auto;
+}

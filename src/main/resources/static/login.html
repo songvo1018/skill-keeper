@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Вход — skills-keeper</title>
+	<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+	<main class="login">
+		<h1>Вход</h1>
+
+		<!-- novalidate: the fields are checked by login.js, so the messages are ours and in one place. -->
+		<form id="login-form" class="panel" novalidate autocomplete="on">
+			<div class="field">
+				<label for="username">Имя пользователя</label>
+				<input id="username" name="username" type="text" autocomplete="username" autofocus>
+				<p class="field-error" id="username-error" role="alert"></p>
+			</div>
+
+			<div class="field">
+				<label for="password">Пароль</label>
+				<input id="password" name="password" type="password" autocomplete="current-password">
+				<p class="field-error" id="password-error" role="alert"></p>
+			</div>
+
+			<button id="submit" type="submit">Войти</button>
+			<p class="error" id="form-error" role="alert"></p>
+		</form>
+
+		<p class="muted">Учётная запись создаётся через <code>POST /api/auth/register</code>.</p>
+	</main>
+
+	<script type="module" src="/login.js"></script>
+</body>
+</html>

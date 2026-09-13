@@ -23,6 +23,9 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * The metadata records left on disk by the sidecar format are read exactly once, into the table.
  * These are the cases the startup scan used to cover, now that the scan has become an import.
+ *
+ * <p>Assertions are made on the rows rather than on a listing: a sidecar records no owner, so an
+ * imported file belongs to nobody and appears in no user's listing until an owner is set on it.
  */
 class LegacyMetadataImporterTest {
 
@@ -43,21 +46,20 @@ class LegacyMetadataImporterTest {
 		Files.writeString(tempDir.resolve(id + FileStorageMessages.BIN_FILE_SUFFIX), "content");
 	}
 
-	private FileStorageService serviceOverSameRepository() {
-		FileStorageService service = new FileStorageService(new FileStorageProperties(tempDir), repository);
-		service.initialize();
-		return service;
+	private StoredFileRow row(String id) {
+		return repository.findById(id).orElseThrow();
 	}
 
 	@Test
-	void metadataLeftOnDiskIsImportedAndListed() throws IOException {
+	void metadataLeftOnDiskIsImportedWithoutAnOwner() throws IOException {
 		FileMetadata preExisting = new FileMetadata("pre-existing-id", "old.txt", "text/plain", 3);
 		writeSidecar(preExisting.id(), preExisting);
 		writePayload(preExisting.id());
 
 		newImporter().importSidecars();
 
-		assertThat(serviceOverSameRepository().listFiles()).containsExactly(preExisting);
+		assertThat(row(preExisting.id()).toMetadata()).isEqualTo(preExisting);
+		assertThat(row(preExisting.id()).ownerUsername()).isNull();
 	}
 
 	@Test
@@ -71,7 +73,7 @@ class LegacyMetadataImporterTest {
 		importer.importSidecars();
 
 		assertThat(repository.count()).isEqualTo(1);
-		assertThat(serviceOverSameRepository().listFiles()).containsExactly(preExisting);
+		assertThat(row(preExisting.id()).toMetadata()).isEqualTo(preExisting);
 	}
 
 	@Test
@@ -80,12 +82,12 @@ class LegacyMetadataImporterTest {
 		writeSidecar(onDisk.id(), onDisk);
 		writePayload(onDisk.id());
 		FileMetadata alreadyStored = new FileMetadata("known-id", "already-in-table.txt", "text/plain", 9);
-		repository.insert(StoredFileRow.forInsert(alreadyStored));
+		repository.insert(StoredFileRow.forInsert(alreadyStored, null));
 
 		newImporter().importSidecars();
 
 		assertThat(repository.count()).isEqualTo(1);
-		assertThat(serviceOverSameRepository().listFiles()).containsExactly(alreadyStored);
+		assertThat(row(alreadyStored.id()).toMetadata()).isEqualTo(alreadyStored);
 	}
 
 	@Test
@@ -97,7 +99,8 @@ class LegacyMetadataImporterTest {
 
 		newImporter().importSidecars();
 
-		assertThat(serviceOverSameRepository().listFiles()).containsExactly(valid);
+		assertThat(repository.count()).isEqualTo(1);
+		assertThat(row(valid.id()).toMetadata()).isEqualTo(valid);
 	}
 
 	@Test
@@ -106,7 +109,7 @@ class LegacyMetadataImporterTest {
 
 		newImporter().importSidecars();
 
-		assertThat(serviceOverSameRepository().listFiles()).isEmpty();
+		assertThat(repository.count()).isZero();
 	}
 
 	@Test
@@ -116,7 +119,7 @@ class LegacyMetadataImporterTest {
 
 		newImporter().importSidecars();
 
-		assertThat(serviceOverSameRepository().listFiles()).isEmpty();
+		assertThat(repository.count()).isZero();
 	}
 
 	@Test
@@ -127,7 +130,6 @@ class LegacyMetadataImporterTest {
 		newImporter().importSidecars();
 
 		assertThat(repository.count()).isZero();
-		assertThat(serviceOverSameRepository().listFiles()).isEmpty();
 	}
 
 	@Test
@@ -149,7 +151,7 @@ class LegacyMetadataImporterTest {
 
 		newImporter().importSidecars();
 
-		assertThat(serviceOverSameRepository().listFiles()).containsExactly(metadata);
+		assertThat(row(metadata.id()).toMetadata()).isEqualTo(metadata);
 	}
 
 	@Test

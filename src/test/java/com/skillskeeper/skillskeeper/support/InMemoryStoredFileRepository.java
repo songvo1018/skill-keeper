@@ -1,6 +1,7 @@
 package com.skillskeeper.skillskeeper.support;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,25 +35,40 @@ public class InMemoryStoredFileRepository implements StoredFileRepository {
 			throw new DuplicateKeyException(row.id());
 		}
 		rows.put(row.id(), new StoredFileRow(row.id(), row.originalFilename(), row.contentType(), row.sizeBytes(),
-				nextCreatedAt));
+				row.ownerUsername(), nextCreatedAt));
 		nextCreatedAt = nextCreatedAt.plusMillis(1);
 	}
 
 	@Override
-	public void insert(String id, String originalFilename, String contentType, long sizeBytes) {
-		insert(new StoredFileRow(id, originalFilename, contentType, sizeBytes, null));
+	public void insert(String id, String originalFilename, String contentType, long sizeBytes,
+			String ownerUsername) {
+		insert(new StoredFileRow(id, originalFilename, contentType, sizeBytes, ownerUsername, null));
+	}
+
+	/**
+	 * Matches the query it stands in for: names are compared without regard to letter case, and a
+	 * row with no owner belongs to nobody and so matches no name.
+	 */
+	@Override
+	public List<StoredFileRow> findAllOrderedByOwner(String owner) {
+		return rows.values().stream()
+				.filter(row -> isOwnedBy(row, owner))
+				.sorted(Comparator.comparing(StoredFileRow::createdAt).thenComparing(StoredFileRow::id))
+				.toList();
 	}
 
 	@Override
-	public List<StoredFileRow> findAllOrdered() {
-		return rows.values().stream()
-				.sorted(java.util.Comparator.comparing(StoredFileRow::createdAt).thenComparing(StoredFileRow::id))
-				.toList();
+	public Optional<StoredFileRow> findByIdAndOwner(String id, String owner) {
+		return findById(id).filter(row -> isOwnedBy(row, owner));
 	}
 
 	@Override
 	public Optional<StoredFileRow> findById(String id) {
 		return Optional.ofNullable(rows.get(id));
+	}
+
+	private static boolean isOwnedBy(StoredFileRow row, String owner) {
+		return row.ownerUsername() != null && row.ownerUsername().equalsIgnoreCase(owner);
 	}
 
 	@Override

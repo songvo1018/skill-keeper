@@ -17,10 +17,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.skillskeeper.skillskeeper.auth.web.AuthenticatedUser;
 import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
 import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
 import com.skillskeeper.skillskeeper.filestorage.service.FileStorage;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+/**
+ * Every method resolves the caller through {@link AuthenticatedUser} and hands the name to the
+ * storage service: a file belongs to whoever uploaded it, and nobody else may list or download it.
+ * The token interceptor has already rejected an unauthenticated request by the time these run.
+ */
 @RestController
 public class FileStorageController {
 
@@ -34,19 +42,20 @@ public class FileStorageController {
 	}
 
 	@PostMapping("/api/files")
-	public ResponseEntity<FileMetadata> upload(@RequestParam("file") MultipartFile file) {
-		FileMetadata metadata = fileStorage.store(file);
+	public ResponseEntity<FileMetadata> upload(@RequestParam("file") MultipartFile file,
+			HttpServletRequest request) {
+		FileMetadata metadata = fileStorage.store(file, AuthenticatedUser.username(request));
 		return ResponseEntity.status(HttpStatus.CREATED).body(metadata);
 	}
 
 	@GetMapping("/api/files")
-	public ResponseEntity<List<FileMetadata>> list() {
-		return ResponseEntity.ok(fileStorage.listFiles());
+	public ResponseEntity<List<FileMetadata>> list(HttpServletRequest request) {
+		return ResponseEntity.ok(fileStorage.listFiles(AuthenticatedUser.username(request)));
 	}
 
 	@GetMapping("/api/files/{id}")
-	public ResponseEntity<Resource> download(@PathVariable String id) {
-		StoredFile storedFile = fileStorage.load(id);
+	public ResponseEntity<Resource> download(@PathVariable String id, HttpServletRequest request) {
+		StoredFile storedFile = fileStorage.load(id, AuthenticatedUser.username(request));
 		FileMetadata metadata = storedFile.metadata();
 
 		return ResponseEntity.ok()

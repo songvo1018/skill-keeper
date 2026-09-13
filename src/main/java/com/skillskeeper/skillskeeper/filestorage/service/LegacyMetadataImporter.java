@@ -20,7 +20,11 @@ import com.skillskeeper.skillskeeper.filestorage.repository.StoredFileRow;
 
 /**
  * Moves metadata written before the database existed - the JSON sidecars beside each stored file -
- * into {@code stored_file}, so those files stay in the listing.
+ * into {@code stored_file}, so that metadata is not lost.
+ *
+ * <p>An imported row has no owner, because the sidecar format records none. Such a file appears in
+ * nobody's listing and downloads for nobody until an owner is written onto its row by hand; that is
+ * the price of not guessing whose file it was.
  *
  * <p>Runs as an {@link ApplicationRunner} rather than from {@code @PostConstruct}, because it must
  * see the schema: a runner is invoked once the context is up, and therefore once Flyway has
@@ -111,7 +115,10 @@ class LegacyMetadataImporter implements ApplicationRunner {
 			return false;
 		}
 
-		repository.insert(StoredFileRow.forInsert(metadata));
+		// No owner: the sidecar format predates them and holds no hint of who uploaded the file.
+		// The row is created so the metadata is not lost, but a file nobody owns is listed and
+		// served to nobody until an owner is set on it.
+		repository.insert(StoredFileRow.forInsert(metadata, null));
 		return true;
 	}
 

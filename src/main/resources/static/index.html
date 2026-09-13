@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Файлы — skills-keeper</title>
+	<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+	<header class="top-bar">
+		<h1>Мои файлы</h1>
+		<button id="logout" type="button">Выйти</button>
+	</header>
+
+	<!--
+		The page ships empty on purpose: nothing about a file is in the markup, so a visitor without
+		a token sees a shell and no data. Everything below is filled in by files.js from a request
+		that carries the token.
+	-->
+	<div class="columns">
+		<section class="panel">
+			<form id="upload-form" class="upload">
+				<input id="file-input" type="file" name="file">
+				<button id="upload-button" type="submit">Загрузить</button>
+			</form>
+			<p class="error" id="upload-error" role="alert"></p>
+
+			<p id="list-status" class="muted">Загружаю список…</p>
+			<button id="retry" type="button" hidden>Повторить</button>
+
+			<!-- The table scrolls inside this, so a narrow screen never cuts the buttons off. -->
+			<div class="table-scroll">
+				<table id="files-table" hidden>
+					<thead>
+						<tr>
+							<th>Имя</th>
+							<th>Тип</th>
+							<th>Размер</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="files-body"></tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="panel">
+			<h2 id="preview-title">Содержимое</h2>
+			<p class="muted" id="preview-status"></p>
+			<div class="preview-body" id="preview-body"></div>
+		</section>
+	</div>
+
+	<script type="module" src="/files.js"></script>
+</body>
+</html>

@@ -49,7 +49,7 @@ public class FileStorageService implements FileStorage {
 	}
 
 	@Override
-	public FileMetadata store(MultipartFile file) {
+	public FileMetadata store(MultipartFile file, String owner) {
 		if (file == null || file.isEmpty()) {
 			throw new EmptyUploadException("Uploaded file must not be empty");
 		}
@@ -82,7 +82,7 @@ public class FileStorageService implements FileStorage {
 		}
 
 		try {
-			repository.insert(StoredFileRow.forInsert(metadata));
+			repository.insert(StoredFileRow.forInsert(metadata, owner));
 		}
 		catch (RuntimeException e) {
 			deleteQuietly(binPath);
@@ -92,9 +92,14 @@ public class FileStorageService implements FileStorage {
 		return metadata;
 	}
 
+	/**
+	 * A file owned by somebody else, and one stored before files had owners, are refused the same
+	 * way as an id that was never issued: the query matches only rows this caller owns, so all three
+	 * arrive here as an empty result.
+	 */
 	@Override
-	public StoredFile load(String id) {
-		FileMetadata metadata = repository.findById(id)
+	public StoredFile load(String id, String owner) {
+		FileMetadata metadata = repository.findByIdAndOwner(id, owner)
 				.map(StoredFileRow::toMetadata)
 				.orElseThrow(() -> new StoredFileNotFoundException(id));
 
@@ -109,12 +114,15 @@ public class FileStorageService implements FileStorage {
 
 	/**
 	 * Rows whose content is no longer on disk are left out, so that every id this returns can be
-	 * passed to {@link #load(String)}. The check costs one call per row and is done per request
-	 * rather than once at startup, because content can go missing at any time.
+	 * passed to {@link #load(String, String)}. The check costs one call per row and is done per
+	 * request rather than once at startup, because content can go missing at any time.
+	 *
+	 * <p>Another user's rows are excluded by the query rather than filtered here, so they never
+	 * reach this process.
 	 */
 	@Override
-	public List<FileMetadata> listFiles() {
-		return repository.findAllOrdered().stream()
+	public List<FileMetadata> listFiles(String owner) {
+		return repository.findAllOrderedByOwner(owner).stream()
 				.filter(row -> Files.isRegularFile(payloadPath(row.id())))
 				.map(StoredFileRow::toMetadata)
 				.toList();

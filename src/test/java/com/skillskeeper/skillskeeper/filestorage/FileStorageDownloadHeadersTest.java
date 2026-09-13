@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import com.skillskeeper.skillskeeper.auth.web.AuthenticatedRequests;
 import com.skillskeeper.skillskeeper.filestorage.controller.FileStorageController;
 import com.skillskeeper.skillskeeper.filestorage.model.FileMetadata;
 import com.skillskeeper.skillskeeper.filestorage.model.StoredFile;
@@ -24,14 +25,16 @@ import com.skillskeeper.skillskeeper.filestorage.service.FileStorage;
  */
 class FileStorageDownloadHeadersTest {
 
+	private static final String OWNER = "alice";
+
 	private final FileStorage fileStorage = mock(FileStorage.class);
 	private final FileStorageController controller = new FileStorageController(fileStorage);
 
 	private ResponseEntity<Resource> downloadWith(String originalFilename, String contentType) {
 		FileMetadata metadata = new FileMetadata("an-id", originalFilename, contentType, 4);
-		when(fileStorage.load(anyString()))
+		when(fileStorage.load(anyString(), anyString()))
 				.thenReturn(new StoredFile(new ByteArrayResource("data".getBytes()), metadata));
-		return controller.download("an-id");
+		return controller.download("an-id", AuthenticatedRequests.forUser(OWNER));
 	}
 
 	private static String contentDisposition(ResponseEntity<Resource> response) {
